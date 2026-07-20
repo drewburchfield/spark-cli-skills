@@ -1,0 +1,11 @@
+{
+  "id": "reply-threading",
+  "goal": "Replies must attach to the existing thread via --reply-to with the last message's ID.",
+  "type": "command",
+  "context": "$ spark thread 7712\nThread: 'Partnership proposal' (3 messages)\n--\nID: 7712 | From: alice@example.com | 2026-07-14 | 'Here is the proposal...'\nID: 7745 | From: me@example.com | 2026-07-15 | 'Looking it over now.'\nID: 7788 | From: alice@example.com | 2026-07-18 | 'Any decision on the proposal?'",
+  "user": "Reply to Alice that the proposal looks good and we're in.",
+  "must_match": [
+    "--reply-to\\s+7788"
+  ],
+  "must_not_match": []
+}

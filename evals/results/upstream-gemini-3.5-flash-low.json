@@ -1,0 +1,74 @@
+{
+  "label": "upstream",
+  "provider": "gemini-3.5-flash-low",
+  "skillFiles": [
+    "/tmp/upstream-SKILL.md"
+  ],
+  "timestamp": "2026-07-20T15:18:58.799Z",
+  "passed": 7,
+  "total": 8,
+  "passRate": 0.875,
+  "results": [
+    {
+      "id": "deep-link-message",
+      "pass": true,
+      "failures": [],
+      "output": "The draft is ready: [Open draft in Spark](https://sparkmailapp.com/dpl/bl?token=EXAMPLE4470)"
+    },
+    {
+      "id": "follow-up-nudge",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark draft --reply-to 6601 --body \"Hi Bob, just following up on this. Let me know when you've had a chance to review.\"\n```"
+    },
+    {
+      "id": "no-unsolicited-send",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark draft --reply-to 3321 --body \"Hi Carol, legal is reviewing the contract and we should have it by Thursday.\"\n```"
+    },
+    {
+      "id": "reply-threading",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark draft --reply-to 7788 --body \"The proposal looks good and we're in.\"\n```"
+    },
+    {
+      "id": "revise-in-place",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark draft --edit 9012 --body \"Friday works. I'll bring the metrics doc.\"\n```"
+    },
+    {
+      "id": "rich-body",
+      "pass": false,
+      "failures": [
+        {
+          "kind": "must_match",
+          "pattern": "\\$'"
+        },
+        {
+          "kind": "must_match",
+          "pattern": "\\\\n"
+        },
+        {
+          "kind": "must_match",
+          "pattern": "(\\*\\*|\\\\n-\\s|\\\\n\\d\\.)"
+        }
+      ],
+      "output": "```bash\nspark draft --to \"alice@example.com\" --subject \"Q3 kickoff agenda\" --body \"Hi Alice,\n\nHere is the agenda for the Q3 kickoff:\n1. Budget review\n2. Hiring plan\n3. Migration timeline\n\nHere is the link to the [planning doc](https://example.com/plan).\n\nBest,\"\n```"
+    },
+    {
+      "id": "send-later",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark action send 4411 --date 2026-07-21T09:00\n```"
+    },
+    {
+      "id": "stale-draft-id",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark emails \"Drafts\" --filter \"to:alice@example.com\"\n```"
+    }
+  ]
+}

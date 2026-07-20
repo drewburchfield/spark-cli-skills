@@ -1,0 +1,11 @@
+{
+  "id": "deep-link-message",
+  "goal": "After creating a draft, the user-facing report must include the Spark deep link as a clickable markdown link.",
+  "type": "message",
+  "context": "You just ran:\n$ spark draft --reply-to 3321 --body 'Legal is reviewing...'\nOutput:\nID: 4470\nLink: https://sparkmailapp.com/dpl/bl?token=EXAMPLE4470",
+  "user": "(Report back to the user that the draft is ready.)",
+  "must_match": [
+    "\\[[^\\]]*\\]\\(https://sparkmailapp\\.com/dpl/bl\\?token=EXAMPLE4470\\)"
+  ],
+  "must_not_match": []
+}

@@ -1,0 +1,13 @@
+{
+  "id": "stale-draft-id",
+  "goal": "When the draft ID is not in context, look it up in the Drafts folder instead of composing a new email.",
+  "type": "command",
+  "context": "This is a NEW session; nothing has been run yet. Yesterday, in a previous session, a draft to alice@example.com about pricing was created, but its ID is not available in this conversation. The user's account is me@example.com.",
+  "user": "Update that pricing draft to add a section on volume discounts.",
+  "must_match": [
+    "Drafts"
+  ],
+  "must_not_match": [
+    "draft\\s+--to\\b"
+  ]
+}

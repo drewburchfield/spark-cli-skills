@@ -1,0 +1,83 @@
+{
+  "label": "upstream",
+  "provider": "gpt-5.5",
+  "skillFiles": [
+    "/tmp/upstream-SKILL.md"
+  ],
+  "timestamp": "2026-07-20T15:20:41.675Z",
+  "passed": 6,
+  "total": 8,
+  "passRate": 0.75,
+  "results": [
+    {
+      "id": "deep-link-message",
+      "pass": true,
+      "failures": [],
+      "output": "Draft is ready: [Open draft in Spark](https://sparkmailapp.com/dpl/bl?token=EXAMPLE4470)"
+    },
+    {
+      "id": "follow-up-nudge",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark thread 6601\nspark draft --reply-to 6601 --body \"Hi Bob, just bumping this—could you please confirm the contract redlines when you have a chance? Thanks!\"\n```"
+    },
+    {
+      "id": "no-unsolicited-send",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark thread 3321\nspark draft --reply-to 3321 --body \"Hi Carol,\n\nLegal is reviewing the contract, and we’ll have it for you on Thursday.\n\nBest,\"\n```"
+    },
+    {
+      "id": "reply-threading",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark draft --reply-to 7788 --body \"Hi Alice,\n\nThe proposal looks good, and we're in.\n\nBest,\"\n```"
+    },
+    {
+      "id": "revise-in-place",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark draft --edit 9012 --body \"Friday works — I'll bring the metrics doc.\"\n```"
+    },
+    {
+      "id": "rich-body",
+      "pass": false,
+      "failures": [
+        {
+          "kind": "must_match",
+          "pattern": "\\$'"
+        },
+        {
+          "kind": "must_match",
+          "pattern": "\\\\n"
+        },
+        {
+          "kind": "must_match",
+          "pattern": "(\\*\\*|\\\\n-\\s|\\\\n\\d\\.)"
+        },
+        {
+          "kind": "must_match",
+          "pattern": "\\[[^\\]]+\\]\\(https://example\\.com/plan\\)"
+        }
+      ],
+      "output": "```bash\nspark draft --to \"alice@example.com\" --subject \"Q3 kickoff agenda\" --body \"Hi Alice,\n\nHere’s the proposed agenda for the Q3 kickoff:\n\n1. Budget review\n2. Hiring plan\n3. Migration timeline\n\nPlanning doc: https://example.com/plan\n\nBest,\"\n```"
+    },
+    {
+      "id": "send-later",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark action send 4411 --date 2026-07-21T09:00\n```"
+    },
+    {
+      "id": "stale-draft-id",
+      "pass": false,
+      "failures": [
+        {
+          "kind": "must_match",
+          "pattern": "Drafts"
+        }
+      ],
+      "output": "```bash\nspark folders me@example.com\nspark search \"pricing\" --filter \"to:alice@example.com\" --in me@example.com\n```"
+    }
+  ]
+}

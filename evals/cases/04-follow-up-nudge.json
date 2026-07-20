@@ -1,0 +1,13 @@
+{
+  "id": "follow-up-nudge",
+  "goal": "A nudge on an unanswered thread replies to your own last outgoing message, not a new cold email.",
+  "type": "command",
+  "context": "$ spark search --filter \"to:bob@example.com subject:contract\"\nID: 6601 | From: me@example.com | To: bob@example.com | 2026-07-15 | 'Contract redlines attached - can you confirm by Friday?'\n(no reply since; today is 2026-07-20)",
+  "user": "Bump this - Bob never responded.",
+  "must_match": [
+    "--reply-to\\s+6601"
+  ],
+  "must_not_match": [
+    "draft\\s+--to\\b"
+  ]
+}

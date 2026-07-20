@@ -25,7 +25,7 @@ spark <command> [options]
 
 ## Critical rules
 
-1. **Nothing sends without `action send`.** `draft` only creates or edits drafts. Compose, let the user review via the deep link, and only send when asked: `spark action send <draft-id>` (add `--date <future>` for Send Later).
+1. **Nothing sends without `action send`.** `draft` only creates or edits drafts. Compose, let the user review via the deep link, and only send when asked: `spark action send <draft-id>` (add `--date` for Send Later; date formats are `yyyy-MM-ddTHH:mm`, `yyyy-MM-dd`, or `dd/MM/yyyy` - e.g. `--date 2026-07-21T09:00`, never a space-separated datetime).
 2. **Revising a draft: always edit in place.** When the user asks for changes to a draft you already created ("make it shorter", "change the tone", "add Bob"), update it with `spark draft --edit <draft-id> ...` - never run a fresh `draft --to` / `--reply-to`, which mints a duplicate draft. The ID is the `ID:` printed at creation; if it's no longer in context, find it with `spark emails <account>:Drafts`. Only compose a new draft when the user actually wants a new, separate email.
 3. **Format bodies like real email, not text messages.** `--body` is markdown rendered to HTML: **bold** for key points and deadlines, lists for multiple items or steps, `[text](url)` for links, short paragraphs. A quick one-liner can stay plain; anything with structure (options, action items, schedules) should be formatted. In bash use `$'...'` quoting so `\n` becomes a real newline.
 4. **Threading is critical.** A message that belongs to an existing conversation must be created with `--reply-to <last-message-id-in-thread>`; otherwise it starts a new thread. This includes follow-ups/nudges where the last message is your own outgoing one - reply to it.

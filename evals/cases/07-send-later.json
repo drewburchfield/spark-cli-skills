@@ -1,0 +1,11 @@
+{
+  "id": "send-later",
+  "goal": "Scheduled sends use action send with a future --date.",
+  "type": "command",
+  "context": "Today is Monday 2026-07-20. Draft ID 4411 is ready and the user has already approved its content.",
+  "user": "Great - send it tomorrow at 9am.",
+  "must_match": [
+    "action\\s+send\\s+4411\\s+--date\\s+2026-07-21T09:00"
+  ],
+  "must_not_match": []
+}

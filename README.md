@@ -2,6 +2,24 @@
 
 AI agent skills for the [Spark](https://sparkmailapp.com) CLI. Install individual skills or the full set to give your AI agent structured workflows for email, calendar, contacts, teams, and meetings.
 
+> **Fork notice.** This fork restructures the `use-spark` skill and measures the difference with [deterministic behavioral evals](evals/): **upstream 20/24 → fork 24/24 (83% → 100%)** across the Claude Code CLI, gpt-5.5, and gemini-3.5-flash-low.
+
+## What this fork changes (measured)
+
+| | Upstream v1.3.0 | This fork |
+|---|---|---|
+| Eval pass rate (8 cases × 3 models) | 20/24 (83%) | **24/24 (100%)** |
+| `SKILL.md` size | 780 lines, single file | ~100-line core + `reference.md` on demand |
+| Critical rules | scattered mid-document | 6 rules, top of file |
+
+Behavioral fixes, each backed by an [eval case](evals/README.md#cases):
+
+1. **Rich text by default.** Upstream mentions markdown-to-HTML once, with only plain one-line example bodies; models composed walls of plain text (failed `rich-body` on 2 of 3 models). The fork makes formatting a top-level rule with a worked example.
+2. **Draft revisions edit in place.** Upstream documents `--edit` but never instructs its use for revisions; models mint duplicate drafts, and one model composed a brand-new email when the draft ID was from a prior session (failed `stale-draft-id`). The fork adds a hard rule plus the Drafts-folder lookup fallback.
+3. **Progressive disclosure.** Critical behaviors (threading, deep links, no-send-without-ask, access levels, Send Later date formats) moved to the top of a lean core; the full flag reference loads only when needed.
+
+Findings 1-2 and the restructure may be offered upstream as a PR; the eval harness is provider-neutral and reproducible (see [evals/README.md](evals/README.md)).
+
 ## Requirements
 
 - macOS or Windows with a recent build of [Spark Desktop](https://sparkmailapp.com), signed in to at least one account.
