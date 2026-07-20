@@ -4,6 +4,9 @@
   "defaults": {
     "timeout_sec": 300
   },
+  "oracle_defaults": {
+    "persona": "You are an AI email assistant that operates the user's mailbox exclusively through the `spark` CLI."
+  },
   "cases": [
     {
       "id": "revise-in-place",

@@ -50,11 +50,12 @@ const optAll = (name) =>
 const label = opt('label', 'run');
 const provider = opt('provider', 'claude');
 const skillFiles = optAll('skill');
-if (!skillFiles.length) skillFiles.push(join(HERE, '../skills/use-spark/SKILL.md'));
 const evalsFile = opt('evals', join(HERE, '../skills/use-spark/evals/evals.json'));
 const timeoutMs = parseInt(opt('timeout', '180000'), 10);
 const concurrency = parseInt(opt('concurrency', '4'), 10);
+const runs = parseInt(opt('runs', '1'), 10);
 
+// No --skill files → baseline mode: the model gets the scenario with no skill loaded.
 const skill = skillFiles.map((f) => readFileSync(resolve(f), 'utf8')).join('\n\n');
 const evalDoc = JSON.parse(readFileSync(resolve(evalsFile), 'utf8'));
 const cases = evalDoc.cases.map((c) => ({
@@ -63,7 +64,10 @@ const cases = evalDoc.cases.map((c) => ({
   ...(c.oracle || {}),
 }));
 
-const SYSTEM = `You are an AI email assistant that operates the user's mailbox exclusively through the \`spark\` CLI. The following skill document is your only reference for how to use it. Follow it exactly.\n\n<skill>\n${skill}\n</skill>`;
+const persona = evalDoc.oracle_defaults?.persona || 'You are an AI assistant.';
+const SYSTEM = skill
+  ? `${persona} The following skill document is your only reference for how to use it. Follow it exactly.\n\n<skill>\n${skill}\n</skill>`
+  : persona;
 
 const FORMAT = {
   command:
@@ -215,25 +219,42 @@ async function runCase(c) {
 }
 
 // worker pool (--concurrency, default 4; use 1 for CLIs with local state, e.g. opencode's db)
-const results = [];
+// --runs N repeats every case N times (agents are stochastic; single runs lie on small deltas)
+const work = cases.flatMap((c) => Array.from({ length: runs }, (_, t) => ({ c, trial: t + 1 })));
+const trialResults = [];
 let idx = 0;
 await Promise.all(Array.from({ length: concurrency }, async () => {
-  while (idx < cases.length) {
-    const c = cases[idx++];
-    const r = await runCase(c);
-    results.push(r);
-    console.log(`${r.pass ? 'PASS' : 'FAIL'}  ${r.id}${r.pass ? '' : '  [' + r.failures.map((f) => `${f.kind}:${f.pattern}`).join('; ') + ']'}`);
+  while (idx < work.length) {
+    const { c, trial } = work[idx++];
+    const r = { ...(await runCase(c)), trial };
+    trialResults.push(r);
+    const tag = runs > 1 ? ` (trial ${trial}/${runs})` : '';
+    console.log(`${r.pass ? 'PASS' : 'FAIL'}  ${r.id}${tag}${r.pass ? '' : '  [' + r.failures.map((f) => `${f.kind}:${f.pattern}`).join('; ') + ']'}`);
   }
 }));
 
-results.sort((a, b) => a.id.localeCompare(b.id));
-const passed = results.filter((r) => r.pass).length;
+const results = cases.map((c) => {
+  const trials = trialResults.filter((r) => r.id === c.id).sort((a, b) => a.trial - b.trial);
+  const wins = trials.filter((t) => t.pass).length;
+  return {
+    id: c.id, passed: wins, runs,
+    pass: wins === runs,           // full pass: every trial
+    anyPass: wins > 0,             // pass@k: at least one trial
+    trials: trials.map(({ pass, failures, output }) => ({ pass, failures, output })),
+  };
+}).sort((a, b) => a.id.localeCompare(b.id));
+
+const trialsPassed = trialResults.filter((r) => r.pass).length;
 const report = {
-  label, provider, skillFiles, evalsFile, timestamp: new Date().toISOString(),
-  passed, total: results.length, passRate: +(passed / results.length).toFixed(3),
+  label, provider, skillFiles, evalsFile, runs, timestamp: new Date().toISOString(),
+  passed: results.filter((r) => r.pass).length,       // cases passing all trials
+  total: results.length,
+  passRate: +(trialsPassed / trialResults.length).toFixed(3),  // mean over case-trials
+  passAtK: results.filter((r) => r.anyPass).length,
   results,
 };
 mkdirSync(join(HERE, 'results'), { recursive: true });
 const outFile = join(HERE, 'results', `${label}-${provider.replace(/[^a-z0-9.-]/gi, '_')}.json`);
 writeFileSync(outFile, JSON.stringify(report, null, 2));
-console.log(`\n${label} / ${provider}: ${passed}/${results.length} (${Math.round(report.passRate * 100)}%)  -> ${outFile}`);
+const kNote = runs > 1 ? `  full-pass ${report.passed}/${report.total}, pass@${runs} ${report.passAtK}/${report.total},` : '';
+console.log(`\n${label} / ${provider}:${kNote} trial pass rate ${Math.round(report.passRate * 100)}%  -> ${outFile}`);
