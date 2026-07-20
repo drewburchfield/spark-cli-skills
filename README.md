@@ -2,20 +2,20 @@
 
 AI agent skills for the [Spark](https://sparkmailapp.com) CLI. Install individual skills or the full set to give your AI agent structured workflows for email, calendar, contacts, teams, and meetings.
 
-> **Fork notice.** This fork restructures the `use-spark` skill and measures the difference with [deterministic behavioral evals](evals/): **upstream 45/56 → fork 56/56 (80% → 100%, normalized gain g = 1.0)** across seven providers - four real agent CLI harnesses (Claude Code, Codex, Grok, OpenCode, Antigravity) and gateway models (gpt-5.5, gemini-3.5-flash).
+> **Fork notice.** This fork restructures the `use-spark` skill and measures the difference with [deterministic behavioral evals](evals/): **upstream 46/56 → fork 56/56 (82% → 100%, normalized gain g = 1.0)** across seven providers - four real agent CLI harnesses (Claude Code, Codex, Grok, OpenCode, Antigravity) and gateway models (gpt-5.5, gemini-3.5-flash).
 
 ## What this fork changes (measured)
 
 | | Upstream v1.3.0 | This fork |
 |---|---|---|
-| Eval pass rate (8 cases × 7 providers) | 45/56 (80.4%) | **56/56 (100%)** |
+| Eval pass rate (8 cases × 7 providers) | 46/56 (82.1%) | **56/56 (100%)** |
 | `SKILL.md` size | 780 lines, single file | ~100-line core + `reference.md` on demand |
 | Critical rules | scattered mid-document | 6 rules, top of file |
 
 Behavioral fixes, each backed by an [eval case](evals/README.md#cases):
 
 1. **Rich text by default.** Upstream mentions markdown-to-HTML once, with only plain one-line example bodies; every one of the seven providers tested composed structured emails as walls of plain text (failed `rich-body` 7/7). The fork makes formatting a top-level rule with a worked example.
-2. **Draft revisions edit in place.** Upstream documents `--edit` but never instructs its use for revisions; models mint duplicate drafts, and three providers composed a brand-new email when the draft ID was from a prior session (failed `stale-draft-id`). The fork adds a hard rule plus the Drafts-folder lookup fallback.
+2. **Draft revisions edit in place.** Upstream documents `--edit` but never instructs its use for revisions; models mint duplicate drafts, and multiple providers composed a brand-new email when the draft ID was from a prior session (failed `stale-draft-id`). The fork adds a hard rule plus the Drafts-folder lookup fallback.
 3. **Progressive disclosure.** Critical behaviors (threading, deep links, no-send-without-ask, access levels, Send Later date formats) moved to the top of a lean core; the full flag reference loads only when needed.
 
 Findings 1-2 and the restructure may be offered upstream as a PR; the eval harness is provider-neutral and reproducible (see [evals/README.md](evals/README.md)).

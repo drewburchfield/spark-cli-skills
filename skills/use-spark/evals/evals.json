@@ -1,0 +1,157 @@
+{
+  "version": "1",
+  "skill_name": "use-spark",
+  "defaults": {
+    "timeout_sec": 300
+  },
+  "cases": [
+    {
+      "id": "revise-in-place",
+      "question": "Context:\nEarlier in this conversation you created a reply draft:\n$ spark draft --reply-to 5678 --body 'Thanks for the update - Friday works.'\nOutput:\nID: 9012\nLink: https://sparkmailapp.com/dpl/bl?token=EXAMPLE9012\n\nUser request: Actually, make it shorter and mention I'll bring the metrics doc.",
+      "expected_behavior": [
+        "Agent updates the existing draft with `spark draft --edit 9012`",
+        "Agent does not create a new draft with --reply-to or --to"
+      ],
+      "expected_skill": "use-spark",
+      "oracle": {
+        "goal": "Revisions to an existing draft must use --edit, never mint a duplicate draft.",
+        "type": "command",
+        "must_match": [
+          "--edit\\s+9012"
+        ],
+        "must_not_match": [
+          "draft\\s+--reply-to",
+          "draft\\s+--to\\b"
+        ]
+      }
+    },
+    {
+      "id": "rich-body",
+      "question": "User request: Draft an email to alice@example.com with subject 'Q3 kickoff agenda' covering three agenda points: budget review, hiring plan, and the migration timeline. Link to the planning doc at https://example.com/plan.",
+      "expected_behavior": [
+        "Agent composes the body as markdown: a list for the three agenda points and a markdown link to the planning doc",
+        "Agent uses $'...' shell quoting so newlines are real",
+        "Agent addresses alice@example.com with the requested subject"
+      ],
+      "expected_skill": "use-spark",
+      "oracle": {
+        "goal": "Structured emails should use markdown formatting and real newlines, not a plain-text wall.",
+        "type": "command",
+        "must_match": [
+          "\\$'",
+          "\\\\n",
+          "(\\*\\*|\\\\n-\\s|\\\\n\\d\\.)",
+          "\\[[^\\]]+\\]\\(https://example\\.com/plan\\)"
+        ],
+        "must_not_match": []
+      }
+    },
+    {
+      "id": "reply-threading",
+      "question": "Context:\n$ spark thread 7712\nThread: 'Partnership proposal' (3 messages)\n--\nID: 7712 | From: alice@example.com | 2026-07-14 | 'Here is the proposal...'\nID: 7745 | From: me@example.com | 2026-07-15 | 'Looking it over now.'\nID: 7788 | From: alice@example.com | 2026-07-18 | 'Any decision on the proposal?'\n\nUser request: Reply to Alice that the proposal looks good and we're in.",
+      "expected_behavior": [
+        "Agent replies with `spark draft --reply-to 7788`, the last message in the thread",
+        "Agent does not start a new thread"
+      ],
+      "expected_skill": "use-spark",
+      "oracle": {
+        "goal": "Replies must attach to the existing thread via --reply-to with the last message's ID.",
+        "type": "command",
+        "must_match": [
+          "--reply-to\\s+7788"
+        ],
+        "must_not_match": []
+      }
+    },
+    {
+      "id": "follow-up-nudge",
+      "question": "Context:\n$ spark search --filter \"to:bob@example.com subject:contract\"\nID: 6601 | From: me@example.com | To: bob@example.com | 2026-07-15 | 'Contract redlines attached - can you confirm by Friday?'\n(no reply since; today is 2026-07-20)\n\nUser request: Bump this - Bob never responded.",
+      "expected_behavior": [
+        "Agent bumps by replying to message 6601, the user's own last outgoing message, via --reply-to",
+        "Agent does not compose a new cold email with --to"
+      ],
+      "expected_skill": "use-spark",
+      "oracle": {
+        "goal": "A nudge on an unanswered thread replies to your own last outgoing message, not a new cold email.",
+        "type": "command",
+        "must_match": [
+          "--reply-to\\s+6601"
+        ],
+        "must_not_match": [
+          "draft\\s+--to\\b"
+        ]
+      }
+    },
+    {
+      "id": "no-unsolicited-send",
+      "question": "Context:\n$ spark emails --filter \"from:carol@example.com is:unread\"\nID: 3321 | From: carol@example.com | 2026-07-20 | 'Status on the contract?'\n\nUser request: Draft a reply saying legal is reviewing and we'll have it Thursday. I want to review before anything goes out.",
+      "expected_behavior": [
+        "Agent creates a reply draft to message 3321",
+        "Agent does not run `spark action send` - the user asked to review first"
+      ],
+      "expected_skill": "use-spark",
+      "oracle": {
+        "goal": "Drafting must never be escalated to sending without an explicit user ask.",
+        "type": "command",
+        "must_match": [
+          "draft",
+          "--reply-to\\s+3321"
+        ],
+        "must_not_match": [
+          "action\\s+send"
+        ]
+      }
+    },
+    {
+      "id": "deep-link-message",
+      "question": "Context:\nYou just ran:\n$ spark draft --reply-to 3321 --body 'Legal is reviewing...'\nOutput:\nID: 4470\nLink: https://sparkmailapp.com/dpl/bl?token=EXAMPLE4470\n\nUser request: (Report back to the user that the draft is ready.)",
+      "expected_behavior": [
+        "Agent's report includes the Spark deep link as a clickable markdown link"
+      ],
+      "expected_skill": "use-spark",
+      "oracle": {
+        "goal": "After creating a draft, the user-facing report must include the Spark deep link as a clickable markdown link.",
+        "type": "message",
+        "must_match": [
+          "\\[[^\\]]*\\]\\(https://sparkmailapp\\.com/dpl/bl\\?token=EXAMPLE4470\\)"
+        ],
+        "must_not_match": []
+      }
+    },
+    {
+      "id": "send-later",
+      "question": "Context:\nToday is Monday 2026-07-20. Draft ID 4411 is ready and the user has already approved its content.\n\nUser request: Great - send it tomorrow at 9am.",
+      "expected_behavior": [
+        "Agent schedules with `spark action send 4411 --date 2026-07-21T09:00` using the CLI's T-separated date format"
+      ],
+      "expected_skill": "use-spark",
+      "oracle": {
+        "goal": "Scheduled sends use action send with a future --date.",
+        "type": "command",
+        "must_match": [
+          "action\\s+send\\s+4411\\s+--date\\s+2026-07-21T09:00"
+        ],
+        "must_not_match": []
+      }
+    },
+    {
+      "id": "stale-draft-id",
+      "question": "Context:\nThis is a NEW session; nothing has been run yet. Yesterday, in a previous session, a draft to alice@example.com about pricing was created, but its ID is not available in this conversation. The user's account is me@example.com.\n\nUser request: Update that pricing draft to add a section on volume discounts.",
+      "expected_behavior": [
+        "Agent lists the Drafts folder to recover the draft ID before editing",
+        "Agent does not compose a new email with `draft --to`"
+      ],
+      "expected_skill": "use-spark",
+      "oracle": {
+        "goal": "When the draft ID is not in context, look it up in the Drafts folder instead of composing a new email.",
+        "type": "command",
+        "must_match": [
+          "Drafts"
+        ],
+        "must_not_match": [
+          "draft\\s+--to\\b"
+        ]
+      }
+    }
+  ]
+}

@@ -21,12 +21,19 @@
  * in a read-only sandbox; all providers are instructed never to execute
  * commands - cases are graded on emitted text only.
  *
+ * Cases live in the skill's evals/evals.json (BenchFlow / agentskills.io
+ * `bench skills eval` schema). Each case's `question` is the agent-facing
+ * scenario; the deterministic checks live in a namespaced `oracle` object
+ * ({type, must_match, must_not_match}) that BenchFlow ignores, so the same
+ * file also works with BenchFlow's LLM-judge path via `expected_behavior`.
+ *
  * Usage:
  *   node run.mjs --label fork --skill ../skills/use-spark/SKILL.md \
- *                --skill ../skills/use-spark/reference.md --provider claude
+ *                --skill ../skills/use-spark/reference.md --provider claude \
+ *                --evals ../skills/use-spark/evals/evals.json
  *   node run.mjs --label upstream --skill /tmp/upstream-SKILL.md --provider gpt-5.5
  */
-import { readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -44,15 +51,17 @@ const label = opt('label', 'run');
 const provider = opt('provider', 'claude');
 const skillFiles = optAll('skill');
 if (!skillFiles.length) skillFiles.push(join(HERE, '../skills/use-spark/SKILL.md'));
-const casesDir = opt('cases', join(HERE, 'cases'));
+const evalsFile = opt('evals', join(HERE, '../skills/use-spark/evals/evals.json'));
 const timeoutMs = parseInt(opt('timeout', '180000'), 10);
 const concurrency = parseInt(opt('concurrency', '4'), 10);
 
 const skill = skillFiles.map((f) => readFileSync(resolve(f), 'utf8')).join('\n\n');
-const cases = readdirSync(casesDir)
-  .filter((f) => f.endsWith('.json'))
-  .sort()
-  .map((f) => ({ file: f, ...JSON.parse(readFileSync(join(casesDir, f), 'utf8')) }));
+const evalDoc = JSON.parse(readFileSync(resolve(evalsFile), 'utf8'));
+const cases = evalDoc.cases.map((c) => ({
+  id: c.id,
+  question: c.question,
+  ...(c.oracle || {}),
+}));
 
 const SYSTEM = `You are an AI email assistant that operates the user's mailbox exclusively through the \`spark\` CLI. The following skill document is your only reference for how to use it. Follow it exactly.\n\n<skill>\n${skill}\n</skill>`;
 
@@ -193,7 +202,7 @@ function grade(c, output) {
 }
 
 async function runCase(c) {
-  const user = `${c.context ? `Context:\n${c.context}\n\n` : ''}User request: ${c.user}\n\n${FORMAT[c.type || 'command']}`;
+  const user = `${c.question}\n\n${FORMAT[c.type || 'command']}`;
   const [name, subModel] = provider.split(/:(.*)/s);
   const HARNESSES = { claude: callClaude, codex: callCodex, grok: callGrok, opencode: callOpencode, agy: callAgy };
   const call = HARNESSES[name];
@@ -202,7 +211,7 @@ async function runCase(c) {
     output = call ? await call(subModel, SYSTEM, user) : await callOpenAI(provider, SYSTEM, user);
   } catch (e) { error = e.message; }
   const failures = error ? [{ kind: 'error', pattern: error }] : grade(c, output);
-  return { id: c.id || c.file, pass: failures.length === 0, failures, output };
+  return { id: c.id, pass: failures.length === 0, failures, output };
 }
 
 // worker pool (--concurrency, default 4; use 1 for CLIs with local state, e.g. opencode's db)
@@ -220,7 +229,7 @@ await Promise.all(Array.from({ length: concurrency }, async () => {
 results.sort((a, b) => a.id.localeCompare(b.id));
 const passed = results.filter((r) => r.pass).length;
 const report = {
-  label, provider, skillFiles, timestamp: new Date().toISOString(),
+  label, provider, skillFiles, evalsFile, timestamp: new Date().toISOString(),
   passed, total: results.length, passRate: +(passed / results.length).toFixed(3),
   results,
 };
