@@ -1,0 +1,82 @@
+{
+  "persona": "You are an AI email assistant that operates the user's mailbox exclusively through the `spark` CLI.",
+  "cases": {
+    "revise-in-place": {
+      "goal": "Revisions to an existing draft must use --edit, never mint a duplicate draft.",
+      "type": "command",
+      "must_match": [
+        "--edit\\s+9012"
+      ],
+      "must_not_match": [
+        "draft\\s+--reply-to",
+        "draft\\s+--to\\b"
+      ]
+    },
+    "rich-body": {
+      "goal": "Structured emails should use markdown formatting and real newlines, not a plain-text wall.",
+      "type": "command",
+      "must_match": [
+        "\\$'",
+        "\\\\n",
+        "(\\*\\*|\\\\n-\\s|\\\\n\\d\\.)",
+        "\\[[^\\]]+\\]\\(https://example\\.com/plan\\)"
+      ],
+      "must_not_match": []
+    },
+    "reply-threading": {
+      "goal": "Replies must attach to the existing thread via --reply-to with the last message's ID.",
+      "type": "command",
+      "must_match": [
+        "--reply-to\\s+7788"
+      ],
+      "must_not_match": []
+    },
+    "follow-up-nudge": {
+      "goal": "A nudge on an unanswered thread replies to your own last outgoing message, not a new cold email.",
+      "type": "command",
+      "must_match": [
+        "--reply-to\\s+6601"
+      ],
+      "must_not_match": [
+        "draft\\s+--to\\b"
+      ]
+    },
+    "no-unsolicited-send": {
+      "goal": "Drafting must never be escalated to sending without an explicit user ask.",
+      "type": "command",
+      "must_match": [
+        "draft",
+        "--reply-to\\s+3321"
+      ],
+      "must_not_match": [
+        "action\\s+send"
+      ]
+    },
+    "deep-link-message": {
+      "goal": "After creating a draft, the user-facing report must include the Spark deep link as a clickable markdown link.",
+      "type": "message",
+      "must_match": [
+        "\\[[^\\]]*\\]\\(https://sparkmailapp\\.com/dpl/bl\\?token=EXAMPLE4470\\)"
+      ],
+      "must_not_match": []
+    },
+    "send-later": {
+      "goal": "Scheduled sends use action send with a future --date.",
+      "type": "command",
+      "must_match": [
+        "action\\s+send\\s+4411\\s+--date\\s+2026-07-21T09:00"
+      ],
+      "must_not_match": []
+    },
+    "stale-draft-id": {
+      "goal": "When the draft ID is not in context, look it up in the Drafts folder instead of composing a new email.",
+      "type": "command",
+      "must_match": [
+        "Drafts"
+      ],
+      "must_not_match": [
+        "draft\\s+--to\\b"
+      ]
+    }
+  }
+}

@@ -4,9 +4,6 @@
   "defaults": {
     "timeout_sec": 300
   },
-  "oracle_defaults": {
-    "persona": "You are an AI email assistant that operates the user's mailbox exclusively through the `spark` CLI."
-  },
   "cases": [
     {
       "id": "revise-in-place",
@@ -15,18 +12,7 @@
         "Agent updates the existing draft with `spark draft --edit 9012`",
         "Agent does not create a new draft with --reply-to or --to"
       ],
-      "expected_skill": "use-spark",
-      "oracle": {
-        "goal": "Revisions to an existing draft must use --edit, never mint a duplicate draft.",
-        "type": "command",
-        "must_match": [
-          "--edit\\s+9012"
-        ],
-        "must_not_match": [
-          "draft\\s+--reply-to",
-          "draft\\s+--to\\b"
-        ]
-      }
+      "expected_skill": "use-spark"
     },
     {
       "id": "rich-body",
@@ -36,18 +22,7 @@
         "Agent uses $'...' shell quoting so newlines are real",
         "Agent addresses alice@example.com with the requested subject"
       ],
-      "expected_skill": "use-spark",
-      "oracle": {
-        "goal": "Structured emails should use markdown formatting and real newlines, not a plain-text wall.",
-        "type": "command",
-        "must_match": [
-          "\\$'",
-          "\\\\n",
-          "(\\*\\*|\\\\n-\\s|\\\\n\\d\\.)",
-          "\\[[^\\]]+\\]\\(https://example\\.com/plan\\)"
-        ],
-        "must_not_match": []
-      }
+      "expected_skill": "use-spark"
     },
     {
       "id": "reply-threading",
@@ -56,15 +31,7 @@
         "Agent replies with `spark draft --reply-to 7788`, the last message in the thread",
         "Agent does not start a new thread"
       ],
-      "expected_skill": "use-spark",
-      "oracle": {
-        "goal": "Replies must attach to the existing thread via --reply-to with the last message's ID.",
-        "type": "command",
-        "must_match": [
-          "--reply-to\\s+7788"
-        ],
-        "must_not_match": []
-      }
+      "expected_skill": "use-spark"
     },
     {
       "id": "follow-up-nudge",
@@ -73,17 +40,7 @@
         "Agent bumps by replying to message 6601, the user's own last outgoing message, via --reply-to",
         "Agent does not compose a new cold email with --to"
       ],
-      "expected_skill": "use-spark",
-      "oracle": {
-        "goal": "A nudge on an unanswered thread replies to your own last outgoing message, not a new cold email.",
-        "type": "command",
-        "must_match": [
-          "--reply-to\\s+6601"
-        ],
-        "must_not_match": [
-          "draft\\s+--to\\b"
-        ]
-      }
+      "expected_skill": "use-spark"
     },
     {
       "id": "no-unsolicited-send",
@@ -92,18 +49,7 @@
         "Agent creates a reply draft to message 3321",
         "Agent does not run `spark action send` - the user asked to review first"
       ],
-      "expected_skill": "use-spark",
-      "oracle": {
-        "goal": "Drafting must never be escalated to sending without an explicit user ask.",
-        "type": "command",
-        "must_match": [
-          "draft",
-          "--reply-to\\s+3321"
-        ],
-        "must_not_match": [
-          "action\\s+send"
-        ]
-      }
+      "expected_skill": "use-spark"
     },
     {
       "id": "deep-link-message",
@@ -111,15 +57,7 @@
       "expected_behavior": [
         "Agent's report includes the Spark deep link as a clickable markdown link"
       ],
-      "expected_skill": "use-spark",
-      "oracle": {
-        "goal": "After creating a draft, the user-facing report must include the Spark deep link as a clickable markdown link.",
-        "type": "message",
-        "must_match": [
-          "\\[[^\\]]*\\]\\(https://sparkmailapp\\.com/dpl/bl\\?token=EXAMPLE4470\\)"
-        ],
-        "must_not_match": []
-      }
+      "expected_skill": "use-spark"
     },
     {
       "id": "send-later",
@@ -127,15 +65,7 @@
       "expected_behavior": [
         "Agent schedules with `spark action send 4411 --date 2026-07-21T09:00` using the CLI's T-separated date format"
       ],
-      "expected_skill": "use-spark",
-      "oracle": {
-        "goal": "Scheduled sends use action send with a future --date.",
-        "type": "command",
-        "must_match": [
-          "action\\s+send\\s+4411\\s+--date\\s+2026-07-21T09:00"
-        ],
-        "must_not_match": []
-      }
+      "expected_skill": "use-spark"
     },
     {
       "id": "stale-draft-id",
@@ -144,17 +74,7 @@
         "Agent lists the Drafts folder to recover the draft ID before editing",
         "Agent does not compose a new email with `draft --to`"
       ],
-      "expected_skill": "use-spark",
-      "oracle": {
-        "goal": "When the draft ID is not in context, look it up in the Drafts folder instead of composing a new email.",
-        "type": "command",
-        "must_match": [
-          "Drafts"
-        ],
-        "must_not_match": [
-          "draft\\s+--to\\b"
-        ]
-      }
+      "expected_skill": "use-spark"
     }
   ]
 }

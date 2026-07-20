@@ -82,12 +82,21 @@ Append to `cases` in the skill's `evals/evals.json`:
   "id": "my-case",
   "question": "Context:\n<optional prior tool output>\n\nUser request: <the ask>",
   "expected_behavior": ["Natural-language rubric lines for BenchFlow's LLM judge"],
-  "expected_skill": "use-spark",
-  "oracle": {
-    "goal": "One sentence: the behavior this asserts.",
-    "type": "command",
-    "must_match": ["regex"],
-    "must_not_match": ["regex"]
+  "expected_skill": "use-spark"
+}
+```
+
+with a matching entry in `evals/oracle.json` (regex checks for oracle executors; BenchFlow's strict schema is why this is a sibling file rather than inline):
+
+```json
+{
+  "cases": {
+    "my-case": {
+      "goal": "One sentence: the behavior this asserts.",
+      "type": "command",
+      "must_match": ["regex"],
+      "must_not_match": ["regex"]
+    }
   }
 }
 ```
