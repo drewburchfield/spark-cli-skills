@@ -7,6 +7,7 @@ description: >-
   emails, calendar, contacts, meetings, or scheduling.
 metadata:
   version: 1.3.0
+  fork: drewburchfield/spark-cli-skills (woven local improvements on top of readdle/spark-cli-skills)
   requires:
     bins:
       - spark
@@ -199,6 +200,12 @@ Use `thread` to find attachment IDs (the `ID` column in the `Attachments:` table
 
 Create a new email draft or edit an existing one. The body is written in markdown and converted to HTML.
 
+**Format the body like a real email, not a text message.** Because markdown renders to rich HTML, use it deliberately: **bold** for key points and deadlines, bulleted or numbered lists for multiple items or steps, `[link text](url)` for URLs, and short paragraphs separated by blank lines. Match the register of the thread - a quick one-line reply can stay plain, but anything with structure (options, action items, schedules, proposals) should be formatted. In bash, use `$'...'` quoting so `\n` becomes a real newline:
+
+```bash
+spark draft --reply-to 5678 --body $'Hi Alice,\n\nTwo updates on the rollout:\n\n- **Staging** is green as of this morning\n- **Prod** deploy is scheduled for **Friday 10:00**\n\nFull details: [deploy runbook](https://example.com/runbook)\n\nShout if Friday is a problem.'
+```
+
 ```bash
 spark draft --to "alice@example.com" --subject "Hello" --body "Hi Alice, ..."
 spark draft --to "alice@co.com" --to "bob@co.com" --cc "carol@co.com" --subject "Meeting" --body "..."
@@ -249,6 +256,8 @@ spark draft --template 124 --edit 9821 --placeholder "Project name=Acme Q3" --pl
 Explicit flags always win over template fields. Use `template <id|name>` to discover the template's manual placeholders before calling `draft --template` - missing manual placeholders cause a hard error before any draft is created. Auto-fillable placeholders that fail to resolve (e.g. recipient name with multiple `--to`) leave a localized label in the body and surface in the response as a warning.
 
 On success the output includes the draft's `ID:` (use it with `--edit` and `action send`) and a `Link:` line with a Spark deep link (`https://sparkmailapp.com/dpl/bl?token=...`) that opens the draft directly in Spark.
+
+**Revising a draft: always edit in place.** When the user asks for changes to a draft you already created ("make it shorter", "change the tone", "add Bob"), update the existing draft with `--edit <draft-id>` - never run a fresh `draft --to` / `--reply-to` command, which mints a duplicate draft and litters the Drafts folder. The ID to pass is the `ID:` printed when the draft was created. If that ID is no longer in context (a later session, for example), find it by listing the Drafts folder: `spark emails <account>:Drafts`. Only compose a new draft when the user actually wants a new, separate email.
 
 **Always give the user the deep link.** After creating or updating a draft, include the `Link:` URL in your response as a clickable markdown link (e.g. `[Open draft in Spark](https://sparkmailapp.com/dpl/bl?token=...)`) so the user can jump straight to the draft to review or send it. Do not tell the user to open Spark and hunt for the draft manually.
 
@@ -687,8 +696,13 @@ spark contact-action enableAutosummaryForContact newsletter@example.com # AI sum
 
 **Draft a reply:**
 1. `spark emails --filter "from:sender"` - find the email
-2. `spark draft --reply-to <ID> --body "Thanks for the update!"`
+2. `spark draft --reply-to <ID> --body "Thanks for the update!"` - use markdown (bold, lists, links) when the reply has structure
 3. Give the user the `Link:` from the output as a clickable markdown link so they can review the draft in Spark
+
+**Revise a draft you already created:**
+1. Use the `ID:` printed when the draft was created (or `spark emails <account>:Drafts` to find it)
+2. `spark draft --edit <ID> --body "..."` - updates the same draft in place; pass only the fields that change
+3. Re-share the `Link:` so the user can review the updated draft
 
 **Send an email from a saved template:**
 1. `spark templates` - list templates (or `spark templates --personal` / `--team "<name>"`)
@@ -754,14 +768,7 @@ In those cases:
 spark --version
 ```
 
-If the printed version is greater than `metadata.version` above, refresh this file before answering. `spark skill` prints SKILL.md to stdout - capture it and write it back over the file you're reading right now (the path is in your context). For example:
-
-```bash
-mkdir -p <parent-of-use-spark>/use-spark
-spark skill > <parent-of-use-spark>/use-spark/SKILL.md
-```
-
-`<parent-of-use-spark>` is the directory containing the `use-spark/` folder this `SKILL.md` lives in. If you have a file-write tool, you can also pipe `spark skill` output directly through it - the CLI itself does not write any files.
+**This copy is a fork** (`drewburchfield/spark-cli-skills`) carrying local improvements on top of the vendor skill. Do NOT overwrite it with `spark skill > SKILL.md` - that discards the fork's additions. If the printed version is greater than `metadata.version` above, tell the user the fork needs a re-weave: in the fork repo, `git fetch upstream && git merge upstream/main`, re-apply the local additions if the merge touched them, push, then `npx skills update -g` to refresh the installed copy.
 
 Do not check on every session or before every command - this skill is the source of truth unless one of the signals above tells you otherwise.
 
@@ -774,6 +781,8 @@ Do not check on every session or before every command - this skill is the source
 - The `search` command is best for topic-based queries; `emails` is best for browsing/filtering by metadata
 - `thread` returns the full conversation - use it when you need the complete email text, not just metadata
 - Use `draft` to compose emails - it supports new drafts, replies, forwards, and editing existing drafts
+- Draft bodies are markdown rendered to HTML - format real emails (bold, lists, links, paragraphs) instead of sending walls of plain text
+- Revisions go through `draft --edit <id>` - never create a second draft for the same email
 - After creating a draft, always share its `Link:` deep link with the user as a clickable markdown link instead of asking them to open Spark
 - Use `comment` to post team chat messages on threads - it auto-shares the thread if needed
 - Use `action` to perform email actions like pin, archive, snooze, move to folder, and more
