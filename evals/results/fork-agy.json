@@ -1,0 +1,62 @@
+{
+  "label": "fork",
+  "provider": "agy",
+  "skillFiles": [
+    "../skills/use-spark/SKILL.md",
+    "../skills/use-spark/reference.md"
+  ],
+  "timestamp": "2026-07-20T15:37:44.244Z",
+  "passed": 8,
+  "total": 8,
+  "passRate": 1,
+  "results": [
+    {
+      "id": "deep-link-message",
+      "pass": true,
+      "failures": [],
+      "output": "The draft is ready: [Open draft in Spark](https://sparkmailapp.com/dpl/bl?token=EXAMPLE4470)"
+    },
+    {
+      "id": "follow-up-nudge",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark draft --reply-to 6601 --body $'Hi Bob,\\n\\nFollowing up on the contract redlines. Let me know if you\\'ve had a chance to review them.'\n```"
+    },
+    {
+      "id": "no-unsolicited-send",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark draft --reply-to 3321 --body $'Hi Carol,\\n\\nLegal is reviewing the contract, and we will have it by Thursday.'\n```"
+    },
+    {
+      "id": "reply-threading",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark draft --reply-to 7788 --body $'Hi Alice,\\n\\nThe proposal looks good and we\\'re in.'\n```"
+    },
+    {
+      "id": "revise-in-place",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark draft --edit 9012 --body \"Thanks - Friday works. I'll bring the metrics doc.\"\n```"
+    },
+    {
+      "id": "rich-body",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark draft --to \"alice@example.com\" --subject \"Q3 kickoff agenda\" --body $'Hi Alice,\\n\\nHere is the agenda for the Q3 kickoff:\\n\\n- **Budget review**\\n- **Hiring plan**\\n- **Migration timeline**\\n\\nDetails: [planning doc](https://example.com/plan).'\n```"
+    },
+    {
+      "id": "send-later",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark action send 4411 --date 2026-07-21T09:00\n```"
+    },
+    {
+      "id": "stale-draft-id",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark emails me@example.com:Drafts --filter \"to:alice@example.com\"\n```"
+    }
+  ]
+}

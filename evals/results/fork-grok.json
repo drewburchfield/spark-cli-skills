@@ -1,0 +1,62 @@
+{
+  "label": "fork",
+  "provider": "grok",
+  "skillFiles": [
+    "../skills/use-spark/SKILL.md",
+    "../skills/use-spark/reference.md"
+  ],
+  "timestamp": "2026-07-20T15:35:00.482Z",
+  "passed": 8,
+  "total": 8,
+  "passRate": 1,
+  "results": [
+    {
+      "id": "deep-link-message",
+      "pass": true,
+      "failures": [],
+      "output": "Your draft reply is ready: [Open draft in Spark](https://sparkmailapp.com/dpl/bl?token=EXAMPLE4470)"
+    },
+    {
+      "id": "follow-up-nudge",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark draft --reply-to 6601 --body $'Hi Bob,\\n\\nJust bumping this — did you get a chance to review the contract redlines? Happy to jump on a quick call if easier.\\n\\nThanks'\n```"
+    },
+    {
+      "id": "no-unsolicited-send",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark draft --reply-to 3321 --body $'Hi Carol,\\n\\nLegal is reviewing and we\\'ll have it Thursday.\\n\\nThanks'\n```"
+    },
+    {
+      "id": "reply-threading",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark draft --reply-to 7788 --body $'Hi Alice,\\n\\nThe proposal looks good — we\\'re in.\\n\\nLooking forward to next steps.'\n```"
+    },
+    {
+      "id": "revise-in-place",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark draft --edit 9012 --body \"Thanks - Friday works. I'll bring the metrics doc.\"\n```"
+    },
+    {
+      "id": "rich-body",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark draft --to \"alice@example.com\" --subject \"Q3 kickoff agenda\" --body $'Hi Alice,\\n\\nHere is the proposed agenda for the Q3 kickoff:\\n\\n- **Budget review**\\n- **Hiring plan**\\n- **Migration timeline**\\n\\nPlanning doc: [Q3 plan](https://example.com/plan)\\n\\nLet me know if you want anything added or reordered.'\n```"
+    },
+    {
+      "id": "send-later",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark action send 4411 --date 2026-07-21T09:00\n```"
+    },
+    {
+      "id": "stale-draft-id",
+      "pass": true,
+      "failures": [],
+      "output": "```bash\nspark emails me@example.com:Drafts\n```"
+    }
+  ]
+}

@@ -4,20 +4,30 @@ Deterministic, oracle-graded evals for the [`use-spark`](../skills/use-spark/SKI
 
 ## Results
 
-Pass rate out of 8 cases, per skill variant and model. "Upstream" is the vendor skill at v1.3.0 (780 lines, single file). "Fork" is this repo's restructure: a ~100-line core `SKILL.md` with critical rules first, plus `reference.md` for full flag documentation.
+Pass rate out of 8 cases, per skill variant and provider. "Upstream" is the vendor skill at v1.3.0 (780 lines, single file). "Fork" is this repo's restructure: a ~100-line core `SKILL.md` with critical rules first, plus `reference.md` for full flag documentation. Providers span four real agent CLI harnesses and three models on an OpenAI-compatible gateway.
 
-| Skill variant | Claude Code CLI (sonnet) | gpt-5.5 | gemini-3.5-flash-low | Aggregate |
-|---|---|---|---|---|
-| upstream v1.3.0 | 7/8 | 6/8 | 7/8 | 20/24 (83%) |
-| **fork (core + reference)** | **8/8** | **8/8** | **8/8** | **24/24 (100%)** |
-| fork core only (ablation) | 8/8 | 8/8 | 8/8 | 24/24 (100%) |
+| Provider | Upstream v1.3.0 | Fork |
+|---|---|---|
+| Claude Code CLI (sonnet) | 7/8 | **8/8** |
+| Codex CLI (gpt-5.6-sol) | 6/8 | **8/8** |
+| Grok CLI (grok-4.5) | 7/8 | **8/8** |
+| OpenCode (glm-5.2) | 7/8 | **8/8** |
+| Antigravity CLI | 5/8 | **8/8** |
+| gpt-5.5 (gateway) | 6/8 | **8/8** |
+| gemini-3.5-flash-low (gateway) | 7/8 | **8/8** |
+| **Aggregate** | **45/56 (80.4%)** | **56/56 (100%)** |
 
-Upstream failures observed:
+Normalized gain (SkillsBench convention, `g = Δ / (100 - baseline)`): **g = 1.0** - the fork captures all available headroom on this case set. Core-only ablation (fork `SKILL.md` without `reference.md`): 24/24 across claude/gpt-5.5/gemini, confirming the reference file is look-up material, not load-bearing rules.
 
-- **rich-body** (gpt-5.5, gemini): composed structured emails as a single plain-text line despite the skill noting markdown support - the capability is mentioned once mid-document with no examples, so models don't use it.
-- **stale-draft-id** (gpt-5.5): asked to update a draft from a previous session, composed a brand-new email instead of looking the draft up in the Drafts folder.
+Upstream failure pattern:
+
+- **rich-body** failed on **all seven providers**: structured emails composed as a single plain-text line. Upstream mentions markdown-to-HTML once mid-document with only plain one-line examples, so no model uses it.
+- **stale-draft-id** failed on three (codex, gpt-5.5, agy): asked to update a draft from a previous session, the agent composed a brand-new email instead of looking the draft up in the Drafts folder.
+- **follow-up-nudge** failed on one (agy): a bump on an unanswered thread was drafted as a new cold email instead of a reply to the sender's own last outgoing message.
 
 The core-only ablation initially failed one case on two models (`action send --date` written with an undocumented space-separated datetime). The fix was promoting the date format into the core rules - an example of ablation runs identifying which reference details are load-bearing.
+
+Caveats: single trial per cell (agents are stochastic; treat 1-case deltas as directional). OpenCode must run with `--concurrency 1` - parallel instances hit a local database lock, which surfaces as infra errors, not model failures.
 
 Raw per-run output (model responses included) is in [`results/`](results/).
 
