@@ -706,7 +706,9 @@ When no provider-side read is available, verify by construction: check the markd
 
 ### `spark` cannot delete a draft
 
-There is no delete/discard action - `action moveToTrash` returns "action not applicable" for drafts. To remove one, ask the user to delete it in Spark. Do **not** reach for the provider API to clean up, which trips the reconcile race. This is another reason the one-client and edit-in-place rules matter: a duplicate draft you create is one you cannot take back.
+Drafts are excluded from the entire `action` surface, not just one verb. Every one of these returns `action not applicable` when given a draft ID: `moveToTrash`, `moveToFolder` (even targeting the account's real Trash folder), `archive`, `markAsSpam`, `setAside`, `markAsDone`. The CLI exposes exactly three draft operations - create (`draft`), edit (`draft --edit`), and send (`action send`) - so there is no route through folders or labels either.
+
+To remove a draft, ask the user to delete it in Spark. Do **not** reach for the provider API: besides tripping the reconcile race, it was observed not to work - the provider-side delete succeeded, Spark re-uploaded its cached copy, and the reconcile dropped a *different* draft instead. This is the strongest reason the one-client and edit-in-place rules matter: a duplicate draft you create is one you cannot take back.
 
 ## Smart Categories
 
