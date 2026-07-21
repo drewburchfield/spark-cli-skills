@@ -197,7 +197,7 @@ spark draft --template 124 --edit 9821 --placeholder "Project name=Acme Q3" --pl
 | `--edit` | No | Message ID of an existing draft to update. |
 | `--reply-to` | No | Message ID to reply to. |
 | `--forward` | No | Message ID to forward. |
-| `--account` | No | Account email to send from. Accepts a regular mail account, an alias, or a shared inbox email. |
+| `--account` | No | Account email to send from. Accepts a regular mail account, an alias, or a shared inbox email. **Aliases only take effect at creation.** Passing `--account` alongside `--edit` is silently ignored: the command reports success and the from-address is unchanged, with no warning. To change the sender you must compose a new draft. Verify the alias landed by checking the `From:` line in the command's own output. |
 | `--attach` | No | Absolute path to a file to attach. Repeat for multiple. The Spark app must be able to read the path; in the sandboxed App Store build a path outside the app's container can't be read and is rejected with a clear error - pipe the file with `--attach-stream` instead. Max 25 MB per file. |
 | `--attach-stream` | No | Attach a single file whose bytes are read from stdin, shown to recipients as `<name>`. Use this when the file is outside the app's sandbox (the App Store build can't read arbitrary paths) - it's the inbound twin of `attachment --stream`. One streamed file per command; combine with `--attach` for paths the app can read. Max 25 MB. Example: `cat report.pdf \| spark draft --edit 123 --attach-stream report.pdf`. |
 | `--team` | No | Team name. Required when you belong to multiple teams. When editing a draft that's already shared, must match the team that owns the share. |
@@ -601,7 +601,9 @@ Use the `contacts` command to look up email addresses.
 
 ## Rich Text: What Renders and How to Verify
 
-`--body` is markdown and it is converted to real HTML. **Rich formatting is the default, not an enhancement.** The renderer supports nearly the full common-mark surface, so a plain wall of text is a choice you are making, not a limitation you are working around. Reserve unformatted bodies for genuine one-liners ("Works for me, see you Friday"). Anything with two or more ideas - options, action items, steps, links, schedules, comparisons - gets structure.
+`--body` is markdown and it is converted to real HTML. **Rich formatting is the default, not an enhancement.** A plain wall of text is a choice you are making, not a limitation you are working around. Reserve unformatted bodies for genuine one-liners ("Works for me, see you Friday"). Anything with two or more ideas - options, action items, steps, links, schedules - gets structure.
+
+The renderer supports nearly the full common-mark surface, but **what it can do and what you should use are different questions**. Read the capability table for what is possible, then the house style section for what to actually write. Email that uses every available construct reads machine-generated, which defeats the point.
 
 ### What the renderer actually produces
 
@@ -624,6 +626,29 @@ Measured against a stored draft, not inferred:
 | 2-space indented `- item` | nested `<ul>` inside the parent `<li>` | Nests arbitrarily deep. |
 
 Each block becomes a `<div>`; blank lines become `<div>&#160;</div>`.
+
+### House style: native, not designed
+
+The target is email that reads as if it were typed by hand in a mail composer. Not a document, not a report, not a landing page. A recipient should never be able to tell it was generated. These rules were established by reverse-engineering the raw MIME of approved, sent mail, and they hold regardless of which client composes the message.
+
+**Use freely - this is the whole vocabulary of a normal email:**
+
+- **Bold** for section headers, key points, names, and deadlines. A bold line *is* the section header - that is exactly what a composer produces when you bold a line.
+- Bulleted and numbered lists, nested where it helps. Lists were never the problem. An item can carry a bold lead, a couple of full sentences, and an inline link all at once.
+- Named links: `[security baseline](https://…)`. Prefer a clean label over a pasted URL, especially when the mail carries several links - a stack of bare URLs is what a flattened, machine-written email looks like. A short, self-describing URL can stand on its own when that reads more naturally.
+- Short paragraphs with blank lines between them.
+- Inline `code` and fenced blocks for commands the recipient will copy.
+- `>` blockquotes when quoting someone.
+
+**Avoid unless the user explicitly asks for something report-style:**
+
+- `#` / `##` headings. Use a bold line instead. Headings are the single clearest tell that a document generator wrote the mail.
+- Tables. Reformatting a comparison as a list almost always reads better in email; a layout table is the classic misstep.
+- `---` horizontal rules. A blank line already separates sections; composers have no divider button.
+
+When the user does ask for a structured, report-style email, use them - the constraint is about the default, not a hard ban.
+
+**Never**: inline `style=`, font families, sizes, colors, or width wrappers. Markdown cannot emit these anyway, so the only way to get them is by fighting the renderer. Don't.
 
 ### The ordered-list trap
 

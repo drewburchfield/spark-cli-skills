@@ -121,6 +121,30 @@
       "must_not_match": [
         "[\\s>,]https://example\\.com/status"
       ]
+    },
+    "house-style-no-headings": {
+      "goal": "Default email style is hand-typed: bold section leads and lists, never headings/tables/rules.",
+      "type": "command",
+      "must_match": [
+        "\\*\\*"
+      ],
+      "must_not_match": [
+        "(^|\\\\n)#{1,6}\\s",
+        "\\\\n\\s*\\|[^\\n]*\\|",
+        "(^|\\\\n)---\\s*(\\\\n|')"
+      ]
+    },
+    "alias-from-address": {
+      "goal": "A send-as alias is set with --account at creation time; --account on --edit is a silent no-op.",
+      "type": "command",
+      "must_match": [
+        "--account\\s+\\S*notes@mycompany\\.org"
+      ],
+      "must_not_match": [
+        "--edit[^\\n]*--account",
+        "--account[^\\n]*--edit",
+        "\\bgog(-safe)?\\b"
+      ]
     }
   }
 }

@@ -114,6 +114,26 @@
         "Agent does not paste the bare URL, which the renderer leaves as unlinked plain text"
       ],
       "expected_skill": "use-spark"
+    },
+    {
+      "id": "house-style-no-headings",
+      "question": "User request: Draft an email to matt@example.com walking through our four-stage review process, one short paragraph per stage.",
+      "expected_behavior": [
+        "Agent uses bold lines or a numbered list for the stage headers",
+        "Agent does NOT use markdown headings (# / ##), tables, or --- rules - the default house style is email that reads hand-typed",
+        "Agent still formats the body rather than sending a plain wall of text"
+      ],
+      "expected_skill": "use-spark"
+    },
+    {
+      "id": "alias-from-address",
+      "question": "Context:\n$ spark accounts\nEmail Account: me@gmail.com (Access: triage)\n\nnotes@mycompany.org is a send-as alias on that Gmail account.\n\nUser request: Draft a note to client@example.com from my notes@mycompany.org address about the invoice.",
+      "expected_behavior": [
+        "Agent passes --account notes@mycompany.org on the draft creation command",
+        "Agent does not try to set the sender via --edit afterwards, which is silently ignored",
+        "Agent does not reach for a Gmail CLI to get the alias"
+      ],
+      "expected_skill": "use-spark"
     }
   ]
 }
