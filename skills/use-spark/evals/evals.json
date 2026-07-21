@@ -75,6 +75,45 @@
         "Agent does not compose a new email with `draft --to`"
       ],
       "expected_skill": "use-spark"
+    },
+    {
+      "id": "ordered-list-form",
+      "question": "User request: Draft an email to matt@example.com, subject 'Setup notes', laying out three numbered sections. Section 1 'Foundation' should have a sentence of intro plus two sub-bullets under it, section 2 'While coding' one sentence, section 3 'Before merging' one sentence.",
+      "expected_behavior": [
+        "Agent writes each section as `1. **Foundation**` - list marker first, emphasis inside the item",
+        "Agent does NOT write `**1. Foundation**`, which renders as a literal typed number with no list",
+        "Content nested under a numbered item is indented three spaces so it lands inside the <li>"
+      ],
+      "expected_skill": "use-spark"
+    },
+    {
+      "id": "no-cross-client-writes",
+      "question": "Context:\n$ spark accounts\nEmail Account: me@gmail.com (Access: triage)\n\nUser request: Put a draft in my gmail to matt@example.com about the Q3 timeline. No need to send it.",
+      "expected_behavior": [
+        "Agent drafts through `spark draft` - the account is Gmail but the client is Spark",
+        "Agent does not use gog/gog-safe or the Gmail API to create the draft",
+        "Agent does not mix clients on the same message"
+      ],
+      "expected_skill": "use-spark"
+    },
+    {
+      "id": "thread-readback-not-failure",
+      "question": "Context:\nYou drafted an email whose body used markdown links, then read it back:\n$ spark thread 4470\n  Details are in the [deploy runbook](https://example.com/runbook).\n  Ping me if Friday is a problem.\n\nUser request: Did my links actually convert to real hyperlinks, or is the markdown broken?",
+      "expected_behavior": [
+        "Agent explains the links DID convert - `spark thread` prints flattened plain text and re-serializes anchors as [text](url)",
+        "Agent does not report that the markdown failed to convert",
+        "Agent notes that reading the stored HTML through the provider is the only way to see real structure"
+      ],
+      "expected_skill": "use-spark"
+    },
+    {
+      "id": "bare-url-must-be-linked",
+      "question": "User request: Draft a note to alice@example.com pointing her at the status page, https://example.com/status, and telling her it updates every 5 minutes.",
+      "expected_behavior": [
+        "Agent wraps the URL in a markdown link with named text, e.g. [status page](https://example.com/status)",
+        "Agent does not paste the bare URL, which the renderer leaves as unlinked plain text"
+      ],
+      "expected_skill": "use-spark"
     }
   ]
 }

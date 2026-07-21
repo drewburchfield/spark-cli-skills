@@ -77,6 +77,50 @@
       "must_not_match": [
         "draft\\s+--to\\b"
       ]
+    },
+    "ordered-list-form": {
+      "goal": "Numbered sections must use `1. **Heading**`; `**1. Heading**` silently renders as a typed number with no <ol>.",
+      "type": "command",
+      "must_match": [
+        "1\\.\\s+\\*\\*"
+      ],
+      "must_not_match": [
+        "\\*\\*\\s*1\\.",
+        "\\*\\*\\s*2\\.",
+        "\\*\\*\\s*3\\."
+      ]
+    },
+    "no-cross-client-writes": {
+      "goal": "A Spark-managed account is drafted through spark, never through the provider's own CLI/API.",
+      "type": "command",
+      "must_match": [
+        "spark\\s+draft"
+      ],
+      "must_not_match": [
+        "\\bgog(-safe)?\\b",
+        "gmail\\s+drafts\\s+(create|update|delete)",
+        "users\\.drafts"
+      ]
+    },
+    "thread-readback-not-failure": {
+      "goal": "`[text](url)` in a thread readback is successful conversion, not failed markdown.",
+      "type": "message",
+      "must_match": [
+        "(?i)(did convert|converted correctly|are real (hyper)?links|conversion worked|links are fine|working links)"
+      ],
+      "must_not_match": [
+        "(?i)(did ?n[o']t convert|failed to convert|markdown is broken|links did not|not converted)"
+      ]
+    },
+    "bare-url-must-be-linked": {
+      "goal": "Bare URLs are not auto-linked by the renderer, so they must be wrapped in markdown link syntax.",
+      "type": "command",
+      "must_match": [
+        "\\[[^\\]]+\\]\\(https://example\\.com/status\\)"
+      ],
+      "must_not_match": [
+        "[\\s>,]https://example\\.com/status"
+      ]
     }
   }
 }

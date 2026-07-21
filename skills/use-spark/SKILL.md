@@ -27,10 +27,11 @@ spark <command> [options]
 
 1. **Nothing sends without `action send`.** `draft` only creates or edits drafts. Compose, let the user review via the deep link, and only send when asked: `spark action send <draft-id>` (add `--date` for Send Later; date formats are `yyyy-MM-ddTHH:mm`, `yyyy-MM-dd`, or `dd/MM/yyyy` - e.g. `--date 2026-07-21T09:00`, never a space-separated datetime).
 2. **Revising a draft: always edit in place.** When the user asks for changes to a draft you already created ("make it shorter", "change the tone", "add Bob"), update it with `spark draft --edit <draft-id> ...` - never run a fresh `draft --to` / `--reply-to`, which mints a duplicate draft. The ID is the `ID:` printed at creation; if it's no longer in context, find it with `spark emails <account>:Drafts`. Only compose a new draft when the user actually wants a new, separate email.
-3. **Format bodies like real email, not text messages.** `--body` is markdown rendered to HTML: **bold** for key points and deadlines, lists for multiple items or steps, `[text](url)` for links, short paragraphs. A quick one-liner can stay plain; anything with structure (options, action items, schedules) should be formatted. In bash use `$'...'` quoting so `\n` becomes a real newline.
-4. **Threading is critical.** A message that belongs to an existing conversation must be created with `--reply-to <last-message-id-in-thread>`; otherwise it starts a new thread. This includes follow-ups/nudges where the last message is your own outgoing one - reply to it.
-5. **Always give the user the deep link.** Every `draft` output includes a `Link:` URL - share it as a clickable markdown link (`[Open draft in Spark](https://sparkmailapp.com/dpl/bl?token=...)`) so the user can review in one click. Never tell them to hunt for the draft in Spark.
-6. **Respect access levels.** Each account/shared inbox is configured as **read-only** (list/search/read), **triage** (+ drafts, comments, email/contact actions), or **send** (+ `action send` and the entire `event` command, which can emit invitation mail). Run `spark accounts` first to discover accounts, calendars, teams, and their levels. If a command is refused, the error explains how the user can change the level (Spark Desktop → Settings → AI Agents); don't retry around it.
+3. **Rich text is the default.** `--body` is markdown rendered to real HTML, and the renderer is broad: `#`/`##` headings, **bold**, *italic*, `code`, fenced blocks, `>` quotes, `---` rules, tables, and nested lists all work. Format by default; leave a body unformatted only for a genuine one-liner. Three rules that bite: **bare URLs are not auto-linked** (always `[text](url)`); **the list marker must open the line** - `**1. Heading**` produces a literal typed "1." with no list, the correct form is `1. **Heading**`; and continuation content inside a numbered item must be indented **three spaces**. In bash use `$'...'` quoting so `\n` becomes a real newline. Full rendering table, the ordered-list trap, and how to verify: [reference.md → Rich Text](reference.md#rich-text-what-renders-and-how-to-verify).
+4. **One client per message, and `spark thread` cannot verify formatting.** If an account appears in `spark accounts`, Spark owns it - never create, edit, or delete that message through a provider CLI or API (`gog-safe`, the Gmail API, another client), even when it is a Gmail account. **Gmail is the account, Spark is the client.** Writing from both sides triggers a sync reconcile that silently drops one version, and `spark` has no draft-delete to clean up after you. Reading through the provider is safe and is the *only* way to see real HTML: `thread` prints flattened plain text that strips bold and re-serializes working links as `[text](url)`, so it makes correct formatting look broken. Expect tens of seconds of sync lag before a provider-side read reflects your edit.
+5. **Threading is critical.** A message that belongs to an existing conversation must be created with `--reply-to <last-message-id-in-thread>`; otherwise it starts a new thread. This includes follow-ups/nudges where the last message is your own outgoing one - reply to it.
+6. **Always give the user the deep link.** Every `draft` output includes a `Link:` URL - share it as a clickable markdown link (`[Open draft in Spark](https://sparkmailapp.com/dpl/bl?token=...)`) so the user can review in one click. Never tell them to hunt for the draft in Spark.
+7. **Respect access levels.** Each account/shared inbox is configured as **read-only** (list/search/read), **triage** (+ drafts, comments, email/contact actions), or **send** (+ `action send` and the entire `event` command, which can emit invitation mail). Run `spark accounts` first to discover accounts, calendars, teams, and their levels. If a command is refused, the error explains how the user can change the level (Spark Desktop → Settings → AI Agents); don't retry around it.
 
 ## Commands
 
@@ -74,6 +75,23 @@ spark draft --edit 9012 --body "Thanks - Friday works. I'll bring the metrics do
 spark action send 9012
 ```
 
+Numbered sections with content under each item - note the marker opens the line and continuations are indented three spaces (write it to a file when it's this long, then `--body "$(cat body.md)"`):
+
+```markdown
+1. **Set expectations first**
+
+   Install the two review skills:
+
+   `npx skills add example/skills --skill grill-me -g -y`
+
+   - **grill-me** checks the plan before any file changes
+   - **wayfinder** splits large tasks into decision tickets
+
+2. **Then write code**
+
+   Details in the [security baseline](https://example.com/baseline).
+```
+
 Key flags: repeatable `--to/--cc/--bcc`, `--account <from-address>`, `--attach <path>` (or pipe via `--attach-stream` when the app can't read the path), `--no-signature`, `--template <id|name>` with `--placeholder "name=value"` (inspect required placeholders first with `spark template <id|name>`). Sharing a draft with teammates (`--team`/`--user`/`--allow-send`) and its edge cases are covered in [reference.md](reference.md).
 
 ## Typical workflows
@@ -82,7 +100,7 @@ Key flags: repeatable `--to/--cc/--bcc`, `--account <from-address>`, `--attach <
 
 **Find and read:** `spark emails --filter "from:alice@example.com subject:report"` → `spark thread <id>`.
 
-**Draft a reply:** find the message → `spark draft --reply-to <id> --body ...` (markdown when it has structure) → give the user the `Link:`.
+**Draft a reply:** find the message → `spark draft --reply-to <id> --body ...` (formatted markdown by default) → give the user the `Link:`.
 
 **Revise a draft:** `spark draft --edit <id> --body ...` (only the fields that change) → re-share the `Link:`.
 

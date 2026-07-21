@@ -131,6 +131,8 @@ Each message's `Attachments:` block is a table with columns `ID`, `Name`, `Size`
 
 Use `emails` or `search` to find message IDs (the ID column), then `thread` to read the full conversation. Use `folders` to list valid label identifiers for `action attachLabel` / `detachLabel`.
 
+**`thread` bodies are plain text, so they cannot verify formatting.** The body you get back is the HTML flattened to text, not the markdown you sent and not the HTML that was stored. Bold and inline code are stripped, `<ol>`/`<ul>` both collapse to `1.` and `•` markers, content nested inside a list item is joined onto the item's line with double spaces, and anchors are re-serialized as `[text](url)` - which reads exactly like markdown that failed to convert, when in fact it converted correctly. Do not use `thread` to answer "did my formatting work"; see [Rich Text: What Renders and How to Verify](#rich-text-what-renders-and-how-to-verify).
+
 ### attachment
 
 Read a single email attachment by its ID (pk) from the `thread` Attachments table. The file is auto-downloaded if it isn't cached locally yet.
@@ -154,6 +156,8 @@ Use `thread` to find attachment IDs (the `ID` column in the `Attachments:` table
 Create a new email draft or edit an existing one. The body is written in markdown and converted to HTML.
 
 **Format the body like a real email, not a text message.** Because markdown renders to rich HTML, use it deliberately: **bold** for key points and deadlines, bulleted or numbered lists for multiple items or steps, `[link text](url)` for URLs, and short paragraphs separated by blank lines. Match the register of the thread - a quick one-line reply can stay plain, but anything with structure (options, action items, schedules, proposals) should be formatted. In bash, use `$'...'` quoting so `\n` becomes a real newline:
+
+Markdown that silently fails to render, and how to check what a draft actually became, are in [Rich Text: What Renders and How to Verify](#rich-text-what-renders-and-how-to-verify). Read it before writing any body with headings, numbered sections, or nested content - the failure mode is a body that looks fine in every readback you have and wrong in the recipient's client.
 
 ```bash
 spark draft --reply-to 5678 --body $'Hi Alice,\n\nTwo updates on the rollout:\n\n- **Staging** is green as of this morning\n- **Prod** deploy is scheduled for **Friday 10:00**\n\nFull details: [deploy runbook](https://example.com/runbook)\n\nShout if Friday is a problem.'
@@ -211,6 +215,8 @@ Explicit flags always win over template fields. Use `template <id|name>` to disc
 On success the output includes the draft's `ID:` (use it with `--edit` and `action send`) and a `Link:` line with a Spark deep link (`https://sparkmailapp.com/dpl/bl?token=...`) that opens the draft directly in Spark.
 
 **Revising a draft: always edit in place.** When the user asks for changes to a draft you already created ("make it shorter", "change the tone", "add Bob"), update the existing draft with `--edit <draft-id>` - never run a fresh `draft --to` / `--reply-to` command, which mints a duplicate draft and litters the Drafts folder. The ID to pass is the `ID:` printed when the draft was created. If that ID is no longer in context (a later session, for example), find it by listing the Drafts folder: `spark emails <account>:Drafts`. Only compose a new draft when the user actually wants a new, separate email.
+
+**One client per message: never write to a Spark-managed message with another mail tool.** If the account appears in `spark accounts`, Spark owns the local copy and syncs it to the provider. Creating, editing, or deleting the same message through a provider CLI or API (`gog`/`gog-safe`, the Gmail API, another desktop client) sets up a reconcile race: Spark re-uploads its cached copy, and the two versions are merged by last-writer-wins on the server's clock, not yours. The observed outcome is silent data loss - a good draft composed in Spark is dropped and a stale copy from the other tool survives, and the Drafts folder briefly shows both. This is true even when the account is a Gmail account: **Gmail is the account, Spark is the client.** Reading through another tool is safe; writing is not. If you have already created a duplicate through another tool, do not delete it through that tool - list drafts with `spark emails <account>:Drafts`, pick the surviving ID, and `--edit` it into the shape you want.
 
 **Always give the user the deep link.** After creating or updating a draft, include the `Link:` URL in your response as a clickable markdown link (e.g. `[Open draft in Spark](https://sparkmailapp.com/dpl/bl?token=...)`) so the user can jump straight to the draft to review or send it. Do not tell the user to open Spark and hunt for the draft manually.
 
@@ -592,6 +598,90 @@ spark contact-action enableAutosummaryForContact newsletter@example.com
 ```
 
 Use the `contacts` command to look up email addresses.
+
+## Rich Text: What Renders and How to Verify
+
+`--body` is markdown and it is converted to real HTML. **Rich formatting is the default, not an enhancement.** The renderer supports nearly the full common-mark surface, so a plain wall of text is a choice you are making, not a limitation you are working around. Reserve unformatted bodies for genuine one-liners ("Works for me, see you Friday"). Anything with two or more ideas - options, action items, steps, links, schedules, comparisons - gets structure.
+
+### What the renderer actually produces
+
+Measured against a stored draft, not inferred:
+
+| Markdown you write | HTML you get | Notes |
+|---|---|---|
+| `# Heading`, `## Heading` | `<h1>`, `<h2>` | Real headings work. Useful for long, sectioned mail. |
+| `**bold**` | `<strong>` | |
+| `*italic*` | `<em>` | |
+| `` `code` `` | `<code>` | |
+| ` ```fence``` ` | `<pre><code>` | Good for commands the recipient will copy. |
+| `> quote` | `<blockquote>` | |
+| `---` | `<hr />` | |
+| `\| a \| b \|` table | `<table><thead><tbody>` | Full tables render. |
+| `[text](url)` | `<a href="url">text</a>` | |
+| `https://bare.url` | **plain text, not a link** | Bare URLs are *not* auto-linked. Always wrap them: `[runbook](https://…)`. |
+| `1. item` | `<ol><li>` | The marker must open the line. |
+| `- item` | `<ul><li>` | |
+| 2-space indented `- item` | nested `<ul>` inside the parent `<li>` | Nests arbitrarily deep. |
+
+Each block becomes a `<div>`; blank lines become `<div>&#160;</div>`.
+
+### The ordered-list trap
+
+Wrapping the number in the emphasis kills the list. The marker has to be the first thing on the line, with emphasis *inside* the item:
+
+```markdown
+**1. Section heading**          ← WRONG: renders <div><strong>1. Section heading</strong></div>
+                                  A literal typed "1." in a paragraph. No <ol>, no <li>,
+                                  no list semantics, and the numbers do not renumber.
+
+1. **Section heading**          ← RIGHT: renders <ol><li><strong>Section heading</strong>
+```
+
+This is the single most common way a "numbered list" comes out wrong, and **no readback available to you will show the difference** - both print as `1. Section heading` in `spark thread`. Get it right at compose time.
+
+To put paragraphs, sub-bullets, or code inside a numbered item, indent the continuation to the marker's width - **three spaces** after `1. `, two after `- `:
+
+```markdown
+1. **My favorite foundation**
+
+   Install these two skills:
+
+   - **grill-me** checks the plan before any file changes
+   - **wayfinder** breaks large tasks into decision tickets
+
+2. **During code writing**
+```
+
+Un-indented continuation lines fall *outside* the `<li>` and the list breaks into fragments.
+
+### `--body` replaces the entire body
+
+Every `--edit ... --body` re-renders the whole body from the markdown you supply. There is no patch or append mode. Two consequences:
+
+- **Formatting the user applied by hand in Spark's composer is destroyed on the next edit.** If the user says they edited the draft themselves and asks you to "add links but keep my formatting," you cannot round-trip it: `thread` gives you flattened plain text, not their markdown or their HTML. Reconstruct the body from that plain text, tell the user you are re-rendering rather than patching, and let them confirm before you overwrite.
+- Omitting `--body` on an `--edit` leaves the existing body untouched. Only pass the fields that change.
+
+### Verifying what a draft rendered to
+
+**`spark thread` cannot verify formatting.** It prints the HTML flattened to plain text, which is misleading in both directions:
+
+- Bold, italic, inline code, and headings are **stripped** - working formatting looks absent.
+- Anchors are re-serialized as `[text](url)` - working links look like markdown that failed to convert.
+- `<ol>` and `<ul>` both collapse to `1.` and `•` markers - a real list is indistinguishable from typed-in numbers.
+- Content nested inside an `<li>` is joined onto the item's line with double spaces.
+
+So: seeing `[text](url)` in a `thread` readback is **success**, not failure. Seeing a literal `**` is the one reliable failure signal - it means that markdown did not convert at all.
+
+The only way to see the real structure is to read the stored HTML through the provider the account syncs to (for Gmail, `gog-safe … gmail drafts get <id> -j` and base64-decode the `text/html` part). Two rules when you do:
+
+1. **Read only.** Never create, update, or delete a Spark-managed message through the provider - see the one-client rule under `draft`.
+2. **Expect sync lag.** The provider copy trails a `spark draft` write by tens of seconds. A read immediately after an edit returns the *old* body and will make you report the wrong result. Poll until the content changes (hash it, or grep for a string you just added) before drawing any conclusion.
+
+When no provider-side read is available, verify by construction: check the markdown source against the rules above before sending it.
+
+### `spark` cannot delete a draft
+
+There is no delete/discard action - `action moveToTrash` returns "action not applicable" for drafts. To remove one, ask the user to delete it in Spark. Do **not** reach for the provider API to clean up, which trips the reconcile race. This is another reason the one-client and edit-in-place rules matter: a duplicate draft you create is one you cannot take back.
 
 ## Smart Categories
 
